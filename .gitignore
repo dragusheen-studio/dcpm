@@ -1,0 +1,36 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.installed.cfg
+bin/
+include/
+lib/
+share/
+spec/
+eggs/
+.eggs/
+build/
+dist/
+
+# --- Environnements Virtuels ---
+.venv/
+venv/
+ENV/
+
+# --- IDEs ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# --- DCPM / C++ (Quand tu testeras ton propre outil) ---
+.dcpm/modules/
+build/
+bin/
+out/
+
+# --- Logs ---
+*.log
