@@ -1,0 +1,13 @@
+#pragma once
+
+namespace ${NAMESPACE} {
+
+class ${PROJECT_PASCAL} {
+public:
+    ${PROJECT_PASCAL}();
+    ~${PROJECT_PASCAL}();
+
+    void run();
+};
+
+} // namespace ${NAMESPACE}

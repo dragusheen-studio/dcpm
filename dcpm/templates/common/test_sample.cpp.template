@@ -1,0 +1,10 @@
+#include <gtest/gtest.h>
+
+// Basic test to verify that the test suite is working
+TEST(DefaultTest, AlwaysTrue) {
+    EXPECT_EQ(1, 1);
+}
+
+// You can now test your classes, for example:
+// #include "${PROJECT_PASCAL}.hpp"
+// TEST(${PROJECT_PASCAL}Test, Initialization) { ... }
