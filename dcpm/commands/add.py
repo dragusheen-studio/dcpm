@@ -8,6 +8,9 @@ from .base import BaseCommand
 
 class AddCommand(BaseCommand):
     _WHITELIST = {
+        "nlohmann_json": "https://github.com/nlohmann/json.git",
+        "spdlog": "https://github.com/gabime/spdlog.git",
+        "fmt": "https://github.com/fmtlib/fmt.git"
     }
 
     def run(self, params):
