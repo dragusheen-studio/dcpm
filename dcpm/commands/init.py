@@ -4,7 +4,7 @@ import json
 import re
 from colorama import Fore, Style
 from .base import BaseCommand
-from dcpm.utils.text import to_pascal_case, to_snake_case
+from dcpm.utils.text import to_snake_case
 
 class InitCommand(BaseCommand):
     def run(self, params):
@@ -61,7 +61,7 @@ class InitCommand(BaseCommand):
 
         keys = {
             "PROJECT_NAME": answers['name'],
-            "PROJECT_PASCAL": to_pascal_case(answers['name']),
+            "PROJECT_PASCAL": answers['name'],
             "NAMESPACE": to_snake_case(answers['name']),
             "CPP_STD": answers['cpp_std'],
             "SRC_DIR": answers['folders']['sources'],
