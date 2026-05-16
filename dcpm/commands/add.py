@@ -15,52 +15,60 @@ class AddCommand(BaseCommand):
 
     def run(self, params):
         if not self.dcpm_validation(): return
-
         self.current_params = params
-        if not params or params[0].startswith("-"):
+
+        libs_to_add = [p for p in params if not p.startswith("-")]
+        if not libs_to_add:
             print(f"{Fore.RED}Error: Missing library name or URL.{Fore.RESET}")
             return
 
-        input_source = params[0]
-        ask_version = "--version" in params
+        ask_version = "--version" in params and len(libs_to_add) == 1
         
-        url = self._WHITELIST.get(input_source, input_source)
-        is_external = input_source not in self._WHITELIST
-
-        if is_external:
-            if not url.startswith("http") and not url.endswith(".git"):
-                print(f"{Fore.RED}Error: Invalid URL format.{Fore.RESET}")
-                return
+        for input_source in libs_to_add:
+            print(f"\n{Style.BRIGHT}--- Adding: {input_source} ---{Style.RESET_ALL}")
             
-            confirm = questionary.confirm(f"External library. Proceed?", default=True).ask()
-            if confirm is None: self._abort()
-            if not confirm: return
+            url = self._WHITELIST.get(input_source, input_source)
+            is_external = input_source not in self._WHITELIST
 
-        print(f"{Fore.YELLOW}Fetching versions for {url}...{Fore.RESET}")
-        tags = self._fetch_remote_tags(url)
-        
-        version = "default"
-        if tags:
-            if not ask_version:
-                version = tags[0]
-                print(f"{Fore.CYAN}Using latest version: {Style.BRIGHT}{version}{Style.RESET_ALL}")
-            else:
-                choice = questionary.select(
-                    "Select version:",
-                    choices=["latest (branch default)"] + tags
-                ).ask()
+            if is_external:
+                if not url.startswith("http") and not url.endswith(".git"):
+                    print(f"{Fore.RED}  → Error: Invalid URL format. Skipping.{Fore.RESET}")
+                    continue
                 
-                if choice is None: self._abort()
-                version = tags[0] if choice == "latest (branch default)" else choice
+                confirm = questionary.confirm(f"  External library '{url}'. Proceed?", default=True).ask()
+                if confirm is None: self._abort()
+                if not confirm: continue
 
-        final_name = input_source
-        if is_external:
-            suggested_name = url.split("/")[-1].replace(".git", "")
-            alias = questionary.text(f"Enter alias (default: {suggested_name}):").ask()
-            if alias is None: self._abort()
-            final_name = alias if alias and alias.strip() else suggested_name
+            print(f"{Fore.YELLOW}  Fetching versions...{Fore.RESET}")
+            tags = self._fetch_remote_tags(url)
+            
+            version = "default"
+            if tags:
+                if not ask_version:
+                    version = tags[0]
+                    print(f"{Fore.CYAN}  Using latest version: {Style.BRIGHT}{version}{Style.RESET_ALL}")
+                else:
+                    choice = questionary.select(
+                        f"  Select version for {input_source}:",
+                        choices=["latest (branch default)"] + tags
+                    ).ask()
+                    if choice is None: self._abort()
+                    version = tags[0] if choice == "latest (branch default)" else choice
 
-        self._save_dependency(final_name, url, version)
+            final_name = input_source
+            if is_external:
+                suggested_name = url.split("/")[-1].replace(".git", "")
+                alias = questionary.text(f"  Enter alias (default: {suggested_name}):").ask()
+                if alias is None: self._abort()
+                final_name = alias if alias and alias.strip() else suggested_name
+
+            self._save_dependency(final_name, url, version, silent_install=True)
+
+        if "--noInstall" not in self.current_params:
+            print(f"\n{Fore.MAGENTA}{Style.BRIGHT}Triggering global installation...{Style.RESET_ALL}")
+            from .install import InstallCommand
+            installer = InstallCommand()
+            installer.run([])
 
     def _fetch_remote_tags(self, url):
         try:
@@ -85,7 +93,7 @@ class AddCommand(BaseCommand):
         print(f"\n{Fore.YELLOW}Operation cancelled by user.{Fore.RESET}")
         sys.exit(0)
 
-    def _save_dependency(self, name, url, version):
+    def _save_dependency(self, name, url, version, silent_install=False):
         config = self.get_dcpm_config()
         if not config: return
         if "dependencies" not in config: config["dependencies"] = {}
@@ -94,20 +102,15 @@ class AddCommand(BaseCommand):
 
         with open(self._config_path, "w") as f:
             json.dump(config, f, indent=4)
-        self.update_dcpm_cmake()
         
-        print(f"\n{Fore.GREEN}✔ Added '{name}' ({version}) to config.json.{Fore.RESET}")
-
-        if "--noInstall" not in self.current_params:
-            from .install import InstallCommand
-            installer = InstallCommand()
-            installer.run([])
+        self.update_dcpm_cmake()
+        print(f"{Fore.GREEN}  ✔ '{name}' ({version}) registered.{Fore.RESET}")
 
     def get_short_help(self):
-        return "Add a dependency (defaults to latest version)."
+        return "Add one or more dependencies."
 
     def get_long_help(self):
-        return (f"Usage: {Fore.GREEN}dcpm add <name|url> [flags]{Fore.RESET}\n\n"
+        return (f"Usage: {Fore.GREEN}dcpm add <lib1> [lib2]... [flags]{Fore.RESET}\n\n"
                 "Flags:\n"
-                "  --version   : Manually select a version from available tags.\n"
-                "  --noInstall : Don't run 'dcpm install' automatically after adding.")
+                "  --version   : Manually select version (works only for a single library).\n"
+                "  --noInstall : Don't run installation after adding libraries.")
