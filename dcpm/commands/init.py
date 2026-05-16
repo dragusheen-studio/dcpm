@@ -72,9 +72,18 @@ class InitCommand(BaseCommand):
                 "executable/lib.cpp.template": f"{keys['SRC_DIR']}/{keys['PROJECT_PASCAL']}.cpp",
                 "common/dcpm.cmake.template": ".dcpm/dcpm.cmake"
             }
-            
             if keys.get("TEST_DIR"):
                 mapping["common/test_sample.cpp.template"] = f"{keys['TEST_DIR']}/sample_test.cpp"
+
+        elif template_type == "library":
+            mapping = {
+                "library/CMakeLists.txt.template": "CMakeLists.txt",
+                "library/lib.hpp.template": f"{keys['INCLUDE_DIR']}/{keys['PROJECT_PASCAL']}.hpp",
+                "library/lib.cpp.template": f"{keys['SRC_DIR']}/{keys['PROJECT_PASCAL']}.cpp",
+                "common/dcpm.cmake.template": ".dcpm/dcpm.cmake",
+                "library/manual_test.cpp.template": f"{keys['TEST_DIR']}/manual_test.cpp",
+                "library/unit_tests.cpp.template": f"{keys['TEST_DIR']}/unit_tests.cpp"
+            }
 
         for src, dest in mapping.items():
             os.makedirs(os.path.dirname(os.path.join(root, dest)), exist_ok=True)

@@ -1,0 +1,11 @@
+#include <iostream>
+#include "${PROJECT_PASCAL}.hpp"
+
+int main() {
+    std::cout << "--- Playground: Testing ${PROJECT_NAME} manually ---" << std::endl;
+    
+    ${NAMESPACE}::${PROJECT_PASCAL} lib;
+    lib.run();
+
+    return 0;
+}
