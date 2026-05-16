@@ -89,8 +89,10 @@ class AddCommand(BaseCommand):
 
         with open(self._config_path, "w") as f:
             json.dump(config, f, indent=4)
+        self.update_dcpm_cmake()
         
         print(f"\n{Fore.GREEN}✔ Added '{name}' ({version}) to config.json.{Fore.RESET}")
+
     def get_short_help(self):
         return "Add a dependency (whitelist or URL) to configuration."
 
