@@ -3,12 +3,13 @@ from .add import AddCommand
 from .install import InstallCommand
 from .run import RunCommand
 from .help import HelpCommand
+from .build import BuildCommand
 
-# Le registre : facile d'ajouter une commande ici
 COMMANDS = {
     "init": InitCommand(),
     "add": AddCommand(),
     "install": InstallCommand(),
     "run": RunCommand(),
+	"build": BuildCommand(),
     "help": HelpCommand()
 }
