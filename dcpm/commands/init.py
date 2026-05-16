@@ -83,6 +83,9 @@ class InitCommand(BaseCommand):
             "common/dcpm.cmake.template": ".dcpm/dcpm.cmake"
         }
         
+        if hasattr(self, '_setup_options') and self._setup_options.get('use_gitignore'):
+            mapping["common/gitignore.template"] = ".gitignore"
+        
         if template_type == "executable":
             mapping.update({
                 "executable/CMakeLists.txt.template": "CMakeLists.txt",
@@ -163,7 +166,12 @@ class InitCommand(BaseCommand):
             clang_style = questionary.select("Clang-Format style:", 
                 choices=["LLVM", "Google", "Chromium", "Mozilla", "WebKit", "Empty (Custom)"]).ask()
 
-        self._setup_options = {'clang_style': clang_style}
+        use_gitignore = questionary.confirm("Add default .gitignore?", default=True).ask()
+
+        self._setup_options = {
+            'clang_style': clang_style,
+            'use_gitignore': use_gitignore
+        }
 
         print(f"\n{Fore.GREEN}{Style.BRIGHT}Wizard completed!{Style.RESET_ALL}")
 

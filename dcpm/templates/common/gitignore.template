@@ -1,0 +1,26 @@
+# --- DCPM ---
+.dcpm/modules/
+.dcpm/dcpm.cmake
+
+# --- Compilation & Build ---
+build/
+bin/
+obj/
+*.a
+*.o
+*.so
+*.dylib
+*.exe
+*.dll
+
+# --- IDEs ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.vs/
+out/
+
+# --- OS ---
+.DS_Store
+Thumbs.db
