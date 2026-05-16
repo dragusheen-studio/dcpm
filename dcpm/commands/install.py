@@ -7,6 +7,7 @@ from .base import BaseCommand
 
 class InstallCommand(BaseCommand):
     _modules_dir = ".dcpm/modules"
+    _lock_path = ".dcpm/lock.json"
 
     def run(self, params):
         if not self.dcpm_validation(): return
@@ -14,37 +15,101 @@ class InstallCommand(BaseCommand):
         config = self.get_dcpm_config()
         if not config: return
 
-        to_process = config.get("dependencies", {}).copy()
-        processed = set()
+        lock_data = self._get_lock_data()
         
-        print(f"{Fore.CYAN}{Style.BRIGHT}--- Recursive Installation ---{Style.RESET_ALL}")
+        to_process = config.get("dependencies", {}).copy()
+        processed_data = {}
+        
+        print(f"{Fore.CYAN}{Style.BRIGHT}--- Recursive Installation & Locking ---{Style.RESET_ALL}")
 
         while to_process:
             alias = list(to_process.keys())[0]
             info = to_process.pop(alias)
             
-            if alias in processed:
+            if alias in processed_data:
                 continue
 
-            success = self._install_if_missing(alias, info)
+            locked_commit = lock_data.get(alias, {}).get("commit")
+            
+            success, final_commit = self._sync_lib(alias, info, locked_commit)
             
             if success:
-                processed.add(alias)
+                processed_data[alias] = {
+                    "url": info.get("url"),
+                    "version": info.get("version"),
+                    "commit": final_commit
+                }
                 
                 sub_deps = self._get_sub_dependencies(alias)
                 for sub_alias, sub_info in sub_deps.items():
-                    if sub_alias not in processed:
+                    if sub_alias not in processed_data:
                         if sub_alias in to_process:
                             if to_process[sub_alias]['version'] != sub_info['version']:
                                 print(f"{Fore.YELLOW}⚠ Version mismatch for {sub_alias}. Using {to_process[sub_alias]['version']}{Fore.RESET}")
                         else:
                             to_process[sub_alias] = sub_info
 
-        self._prune_unused(processed)
-        
-        self._update_full_cmake(processed)
+        self._prune_unused(set(processed_data.keys()))
+        self._update_full_cmake(processed_data.keys())
+        self._write_lock_file(processed_data)
 
-        print(f"\n{Fore.GREEN}{Style.BRIGHT}✔ System synchronized ({len(processed)} modules installed).{Style.RESET_ALL}")
+        print(f"\n{Fore.GREEN}{Style.BRIGHT}✔ System synchronized and locked ({len(processed_data)} modules).{Style.RESET_ALL}")
+
+    def _sync_lib(self, name, info, locked_commit):
+        dest_path = os.path.join(self._modules_dir, name)
+        url = info.get("url")
+        version = info.get("version")
+
+        if not os.path.exists(dest_path):
+            print(f"{Fore.BLUE}Installing {Style.BRIGHT}{name}{Style.RESET_ALL}...", end=" ", flush=True)
+            try:
+                subprocess.run(["git", "clone", url, dest_path], check=True, capture_output=True)
+                
+                target = locked_commit if locked_commit else version
+                if target and target != "default":
+                    subprocess.run(["git", "checkout", target], cwd=dest_path, check=True, capture_output=True)
+                
+                commit = self._get_current_commit(dest_path)
+                print(f"{Fore.GREEN}done ({commit[:7]}){Fore.RESET}")
+                return True, commit
+            except subprocess.CalledProcessError:
+                print(f"{Fore.RED}failed{Fore.RESET}")
+                return False, None
+
+        current_commit = self._get_current_commit(dest_path)
+        if locked_commit and current_commit != locked_commit:
+            print(f"{Fore.YELLOW}Syncing {Style.BRIGHT}{name}{Style.RESET_ALL} to locked commit {locked_commit[:7]}...", end=" ", flush=True)
+            try:
+                subprocess.run(["git", "fetch"], cwd=dest_path, check=True, capture_output=True)
+                subprocess.run(["git", "checkout", locked_commit], cwd=dest_path, check=True, capture_output=True)
+                print(f"{Fore.GREEN}ok{Fore.RESET}")
+                return True, locked_commit
+            except subprocess.CalledProcessError:
+                print(f"{Fore.RED}error{Fore.RESET}")
+                return False, current_commit
+        
+        return True, current_commit
+
+    def _get_current_commit(self, path):
+        try:
+            res = subprocess.run(["git", "rev-parse", "HEAD"], cwd=path, capture_output=True, text=True, check=True)
+            return res.stdout.strip()
+        except Exception:
+            return "unknown"
+
+    def _get_lock_data(self):
+        if os.path.exists(self._lock_path):
+            try:
+                with open(self._lock_path, "r") as f:
+                    return json.load(f)
+            except Exception:
+                return {}
+        return {}
+
+    def _write_lock_file(self, data):
+        os.makedirs(os.path.dirname(self._lock_path), exist_ok=True)
+        with open(self._lock_path, "w") as f:
+            json.dump(data, f, indent=4)
 
     def _get_sub_dependencies(self, alias):
         sub_config_path = os.path.join(self._modules_dir, alias, ".dcpm", "config.json")
@@ -56,31 +121,6 @@ class InstallCommand(BaseCommand):
             except Exception:
                 return {}
         return {}
-
-    def _install_if_missing(self, name, info):
-        dest_path = os.path.join(self._modules_dir, name)
-        
-        if os.path.exists(dest_path):
-            return True
-
-        url = info.get("url")
-        version = info.get("version")
-        
-        print(f"{Fore.BLUE}Installing {Style.BRIGHT}{name}{Style.RESET_ALL} ({version})...")
-        
-        try:
-            cmd = ["git", "clone", "--depth", "1"]
-            if version and version != "default":
-                cmd += ["--branch", version]
-            cmd += [url, dest_path]
-            
-            subprocess.run(cmd, check=True, capture_output=True)
-            return True
-        except subprocess.CalledProcessError as e:
-            print(f"{Fore.RED}  → Error cloning {name}.{Fore.RESET}")
-            if e.stderr:
-                print(f"{Fore.WHITE}{e.stderr.decode().strip()}{Fore.RESET}")
-            return False
 
     def _prune_unused(self, needed_libs):
         if not os.path.exists(self._modules_dir): return
@@ -109,11 +149,10 @@ class InstallCommand(BaseCommand):
             f.write("\n".join(lines))
 
     def get_short_help(self):
-        return "Synchronize installed modules with config.json."
+        return "Synchronize modules and lock versions."
 
     def get_long_help(self):
         return (f"Usage: {Fore.GREEN}dcpm install{Fore.RESET}\n\n"
-                "Synchronizes the '.dcpm/modules/' directory with your configuration:\n"
-                "  1. Downloads missing dependencies from Git.\n"
-                "  2. Removes unused libraries from the modules folder.\n"
-                "  3. Uses shallow cloning (--depth 1) for maximum performance.")
+                "1. Scans dependencies recursively.\n"
+                "2. Clones missing libraries or checkouts locked commits from lock.json.\n"
+                "3. Generates dcpm.cmake and updates lock.json with current hashes.")
