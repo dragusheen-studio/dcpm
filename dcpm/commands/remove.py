@@ -5,9 +5,9 @@ from .base import BaseCommand
 
 class RemoveCommand(BaseCommand):
     def run(self, params):
-        if not self.dcpm_validation(): 
-            return
+        if not self.dcpm_validation():  return
 
+        self.current_params = params
         if not params:
             print(f"{Fore.RED}Error: Missing library name to remove.{Fore.RESET}")
             print(f"Usage: {Fore.GREEN}dcpm remove <alias>{Fore.RESET}")
@@ -36,10 +36,11 @@ class RemoveCommand(BaseCommand):
         print(f"{Fore.GREEN}✔ Removed '{lib_name}' from config.json.{Fore.RESET}")
 
         self.update_dcpm_cmake()
-        print(f"{Fore.BLUE}✔ Project CMake unlinked.{Fore.RESET}")
 
-        print(f"\n{Fore.CYAN}Note: The library files are still in '.dcpm/modules/'.")
-        print(f"Run {Style.BRIGHT}dcpm install{Style.RESET_ALL}{Fore.CYAN} to physically delete them.{Fore.RESET}")
+        if "--noInstall" not in self.current_params:
+            from .install import InstallCommand
+            installer = InstallCommand()
+            installer.run([])
 
     def get_short_help(self):
         return "Remove a dependency from the project."

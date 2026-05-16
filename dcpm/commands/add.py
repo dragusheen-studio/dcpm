@@ -16,6 +16,7 @@ class AddCommand(BaseCommand):
     def run(self, params):
         if not self.dcpm_validation(): return
 
+        self.current_params = params
         if not params or params[0].startswith("-"):
             print(f"{Fore.RED}Error: Missing library name or URL.{Fore.RESET}")
             return
@@ -95,6 +96,11 @@ class AddCommand(BaseCommand):
         self.update_dcpm_cmake()
         
         print(f"\n{Fore.GREEN}✔ Added '{name}' ({version}) to config.json.{Fore.RESET}")
+
+        if "--noInstall" not in self.current_params:
+            from .install import InstallCommand
+            installer = InstallCommand()
+            installer.run([])
 
     def get_short_help(self):
         return "Add a dependency (whitelist or URL) to configuration."
