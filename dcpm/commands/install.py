@@ -63,18 +63,27 @@ class InstallCommand(BaseCommand):
         if not os.path.exists(dest_path):
             print(f"{Fore.BLUE}Installing {Style.BRIGHT}{name}{Style.RESET_ALL}...", end=" ", flush=True)
             try:
-                subprocess.run(["git", "clone", url, dest_path], check=True, capture_output=True)
-                
                 target = locked_commit if locked_commit else version
+                
+                cmd = ["git", "clone", "--depth", "1"]
                 if target and target != "default":
-                    subprocess.run(["git", "checkout", target], cwd=dest_path, check=True, capture_output=True)
+                    cmd += ["--branch", target]
+                cmd += [url, dest_path]
+                
+                subprocess.run(cmd, check=True, capture_output=True)
                 
                 commit = self._get_current_commit(dest_path)
                 print(f"{Fore.GREEN}done ({commit[:7]}){Fore.RESET}")
                 return True, commit
             except subprocess.CalledProcessError:
-                print(f"{Fore.RED}failed{Fore.RESET}")
-                return False, None
+                try:
+                    subprocess.run(["git", "clone", url, dest_path], check=True, capture_output=True)
+                    if target and target != "default":
+                        subprocess.run(["git", "checkout", target], cwd=dest_path, check=True, capture_output=True)
+                    return True, self._get_current_commit(dest_path)
+                except:
+                    print(f"{Fore.RED}failed{Fore.RESET}")
+                    return False, None
 
         current_commit = self._get_current_commit(dest_path)
         if locked_commit and current_commit != locked_commit:
