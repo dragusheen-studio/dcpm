@@ -8,9 +8,6 @@ from .base import BaseCommand
 
 class AddCommand(BaseCommand):
     _WHITELIST = {
-        "nlohmann_json": "https://github.com/nlohmann/json.git",
-        "spdlog": "https://github.com/gabime/spdlog.git",
-        "fmt": "https://github.com/fmtlib/fmt.git"
     }
 
     def run(self, params):
@@ -23,10 +20,10 @@ class AddCommand(BaseCommand):
             return
 
         ask_version = "--version" in params and len(libs_to_add) == 1
-        
+
         for input_source in libs_to_add:
             print(f"\n{Style.BRIGHT}--- Adding: {input_source} ---{Style.RESET_ALL}")
-            
+
             url = self._WHITELIST.get(input_source, input_source)
             is_external = input_source not in self._WHITELIST
 
@@ -34,14 +31,14 @@ class AddCommand(BaseCommand):
                 if not url.startswith("http") and not url.endswith(".git"):
                     print(f"{Fore.RED}  → Error: Invalid URL format. Skipping.{Fore.RESET}")
                     continue
-                
+
                 confirm = questionary.confirm(f"  External library '{url}'. Proceed?", default=True).ask()
                 if confirm is None: self._abort()
                 if not confirm: continue
 
             print(f"{Fore.YELLOW}  Fetching versions...{Fore.RESET}")
             tags = self._fetch_remote_tags(url)
-            
+
             version = "default"
             if tags:
                 if not ask_version:
@@ -77,7 +74,7 @@ class AddCommand(BaseCommand):
                 capture_output=True, text=True, timeout=10
             )
             tags = re.findall(r"refs/tags/(.*)", result.stdout)
-            
+
             def version_key(v):
                 parts = re.split(r'[.-]', v.lstrip('v'))
                 return [int(p) if p.isdigit() else p for p in parts]

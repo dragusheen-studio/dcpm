@@ -21,7 +21,7 @@ class RunCommand(BaseCommand):
 
         project_name = config.get("name")
         target_type = config.get("target_type")
-        
+
         binary_to_run = os.path.join(self._build_dir, project_name)
 
         if target_type in ["Library", "Header-only"]:

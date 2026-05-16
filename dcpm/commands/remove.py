@@ -28,9 +28,9 @@ class RemoveCommand(BaseCommand):
                 continue
 
             confirm = questionary.confirm(f"Remove '{lib_name}' from project?", default=True).ask()
-            if confirm is None: 
+            if confirm is None:
                 self._abort()
-            
+
             if confirm:
                 del config["dependencies"][lib_name]
                 print(f"{Fore.GREEN}  ✔ '{lib_name}' marked for removal.{Fore.RESET}")

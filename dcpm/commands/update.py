@@ -38,13 +38,13 @@ class UpdateCommand(BaseCommand):
         for name, info in libs_to_process.items():
             current_v = info.get("version", "default")
             url = info.get("url")
-            
+
             print(f"  Checking {Fore.BLUE}{name}{Fore.RESET}...")
             tags = self._fetch_remote_tags(url)
-            
+
             if not tags:
                 continue
-                
+
             latest_v = tags[0]
             if latest_v != current_v or manual_version:
                 updates_available.append({
@@ -91,14 +91,14 @@ class UpdateCommand(BaseCommand):
                 if os.path.exists(module_path):
                     import shutil
                     shutil.rmtree(module_path)
-                
+
                 print(f"{Fore.GREEN}  ✔ {up['name']} updated to {new_version}{Fore.RESET}")
                 any_changed = True
 
         if any_changed:
             with open(self._config_path, "w") as f:
                 json.dump(config, f, indent=4)
-            
+
             print(f"\n{Fore.MAGENTA}Synchronizing modules...{Fore.RESET}")
             installer = InstallCommand()
             installer.run([])

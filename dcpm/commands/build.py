@@ -23,7 +23,7 @@ class BuildCommand(BaseCommand):
                 print(f"{Fore.YELLOW}Resetting: Removing build directory...{Fore.RESET}")
                 shutil.rmtree(self._build_dir)
                 print(f"{Fore.GREEN}Project reset.{Fore.RESET}")
-        
+
         elif should_clean:
             if os.path.exists(self._build_dir):
                 print(f"{Fore.YELLOW}Soft cleaning: Removing object files...{Fore.RESET}")
@@ -40,7 +40,7 @@ class BuildCommand(BaseCommand):
             return
 
         print(f"{Fore.CYAN}{Style.BRIGHT}--- Starting Build Process ---{Style.RESET_ALL}")
-        
+
         if not os.path.exists(self._build_dir):
             os.makedirs(self._build_dir)
 
