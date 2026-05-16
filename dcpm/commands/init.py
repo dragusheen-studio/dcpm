@@ -64,26 +64,36 @@ class InitCommand(BaseCommand):
 
 
     def _deploy_templates(self, root, template_type, keys):
+        mapping = {
+            "common/dcpm.cmake.template": ".dcpm/dcpm.cmake"
+        }
+        
         if template_type == "executable":
-            mapping = {
+            mapping.update({
                 "executable/CMakeLists.txt.template": "CMakeLists.txt",
                 "executable/main.cpp.template": f"{keys['SRC_DIR']}/main.cpp",
                 "executable/lib.hpp.template": f"{keys['INCLUDE_DIR']}/{keys['PROJECT_PASCAL']}.hpp",
-                "executable/lib.cpp.template": f"{keys['SRC_DIR']}/{keys['PROJECT_PASCAL']}.cpp",
-                "common/dcpm.cmake.template": ".dcpm/dcpm.cmake"
-            }
+                "executable/lib.cpp.template": f"{keys['SRC_DIR']}/{keys['PROJECT_PASCAL']}.cpp"
+            })
             if keys.get("TEST_DIR"):
                 mapping["common/test_sample.cpp.template"] = f"{keys['TEST_DIR']}/sample_test.cpp"
 
         elif template_type == "library":
-            mapping = {
+            mapping.update({
                 "library/CMakeLists.txt.template": "CMakeLists.txt",
                 "library/lib.hpp.template": f"{keys['INCLUDE_DIR']}/{keys['PROJECT_PASCAL']}.hpp",
                 "library/lib.cpp.template": f"{keys['SRC_DIR']}/{keys['PROJECT_PASCAL']}.cpp",
-                "common/dcpm.cmake.template": ".dcpm/dcpm.cmake",
                 "library/manual_test.cpp.template": f"{keys['TEST_DIR']}/manual_test.cpp",
                 "library/unit_tests.cpp.template": f"{keys['TEST_DIR']}/unit_tests.cpp"
-            }
+            })
+
+        elif template_type == "header-only":
+            mapping.update({
+                "header-only/CMakeLists.txt.template": "CMakeLists.txt",
+                "header-only/lib.hpp.template": f"{keys['INCLUDE_DIR']}/{keys['PROJECT_PASCAL']}.hpp",
+                "library/manual_test.cpp.template": f"{keys['TEST_DIR']}/manual_test.cpp",
+                "library/unit_tests.cpp.template": f"{keys['TEST_DIR']}/unit_tests.cpp"
+            })
 
         for src, dest in mapping.items():
             os.makedirs(os.path.dirname(os.path.join(root, dest)), exist_ok=True)
