@@ -102,8 +102,7 @@ class AddCommand(BaseCommand):
 
         with open(self._config_path, "w") as f:
             json.dump(config, f, indent=4)
-        
-        self.update_dcpm_cmake()
+
         print(f"{Fore.GREEN}  ✔ '{name}' ({version}) registered.{Fore.RESET}")
 
     def get_short_help(self):

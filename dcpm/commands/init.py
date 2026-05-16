@@ -32,6 +32,7 @@ class InitCommand(BaseCommand):
         
         print(f"\n{Fore.GREEN}{Style.BRIGHT}🚀 Project '{answers['name']}' is ready!{Style.RESET_ALL}")
         print(f"{Fore.CYAN}Location: {target_dir}{Fore.RESET}")
+        print(f"{Fore.YELLOW}Next step: Run {Style.BRIGHT}dcpm install{Style.RESET_ALL}{Fore.YELLOW} to generate your CMake environment.{Fore.RESET}")
 
     def _create_directories(self, root, answers):
         folders = [
@@ -79,10 +80,7 @@ class InitCommand(BaseCommand):
         self._deploy_templates(root, template_folder, keys)
 
     def _deploy_templates(self, root, template_type, keys):
-        mapping = {
-            "common/dcpm.cmake.template": ".dcpm/dcpm.cmake"
-        }
-        
+        mapping = {}
         if hasattr(self, '_setup_options') and self._setup_options.get('use_gitignore'):
             mapping["common/gitignore.template"] = ".gitignore"
         
