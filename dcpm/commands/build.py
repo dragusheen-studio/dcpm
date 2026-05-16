@@ -9,8 +9,7 @@ class BuildCommand(BaseCommand):
     _build_dir = "build"
 
     def run(self, params):
-        if not self.dcpm_validation():
-            return
+        if not self.dcpm_validation(): return
 
         self._clean_section(params)
         self._build_section(params)
