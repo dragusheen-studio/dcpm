@@ -6,6 +6,8 @@ from .help import HelpCommand
 from .build import BuildCommand
 from .remove import RemoveCommand
 from .update import UpdateCommand
+from .info import InfoCommand
+
 
 COMMANDS = {
     "init": InitCommand(),
@@ -14,6 +16,7 @@ COMMANDS = {
     "install": InstallCommand(),
 	"update": UpdateCommand(),
     "run": RunCommand(),
+	"info": InfoCommand(),
 	"build": BuildCommand(),
     "help": HelpCommand()
 }
