@@ -16,30 +16,30 @@ class InstallCommand(BaseCommand):
         if not config: return
 
         lock_data = self._get_lock_data()
-        
+
         to_process = config.get("dependencies", {}).copy()
         processed_data = {}
-        
+
         print(f"{Fore.CYAN}{Style.BRIGHT}--- Recursive Installation & Locking ---{Style.RESET_ALL}")
 
         while to_process:
             alias = list(to_process.keys())[0]
             info = to_process.pop(alias)
-            
+
             if alias in processed_data:
                 continue
 
             locked_commit = lock_data.get(alias, {}).get("commit")
-            
+
             success, final_commit = self._sync_lib(alias, info, locked_commit)
-            
+
             if success:
                 processed_data[alias] = {
                     "url": info.get("url"),
                     "version": info.get("version"),
                     "commit": final_commit
                 }
-                
+
                 sub_deps = self._get_sub_dependencies(alias)
                 for sub_alias, sub_info in sub_deps.items():
                     if sub_alias not in processed_data:
@@ -63,18 +63,27 @@ class InstallCommand(BaseCommand):
         if not os.path.exists(dest_path):
             print(f"{Fore.BLUE}Installing {Style.BRIGHT}{name}{Style.RESET_ALL}...", end=" ", flush=True)
             try:
-                subprocess.run(["git", "clone", url, dest_path], check=True, capture_output=True)
-                
                 target = locked_commit if locked_commit else version
+
+                cmd = ["git", "clone", "--depth", "1"]
                 if target and target != "default":
-                    subprocess.run(["git", "checkout", target], cwd=dest_path, check=True, capture_output=True)
-                
+                    cmd += ["--branch", target]
+                cmd += [url, dest_path]
+
+                subprocess.run(cmd, check=True, capture_output=True)
+
                 commit = self._get_current_commit(dest_path)
                 print(f"{Fore.GREEN}done ({commit[:7]}){Fore.RESET}")
                 return True, commit
             except subprocess.CalledProcessError:
-                print(f"{Fore.RED}failed{Fore.RESET}")
-                return False, None
+                try:
+                    subprocess.run(["git", "clone", url, dest_path], check=True, capture_output=True)
+                    if target and target != "default":
+                        subprocess.run(["git", "checkout", target], cwd=dest_path, check=True, capture_output=True)
+                    return True, self._get_current_commit(dest_path)
+                except:
+                    print(f"{Fore.RED}failed{Fore.RESET}")
+                    return False, None
 
         current_commit = self._get_current_commit(dest_path)
         if locked_commit and current_commit != locked_commit:
@@ -87,7 +96,7 @@ class InstallCommand(BaseCommand):
             except subprocess.CalledProcessError:
                 print(f"{Fore.RED}error{Fore.RESET}")
                 return False, current_commit
-        
+
         return True, current_commit
 
     def _get_current_commit(self, path):
@@ -137,14 +146,14 @@ class InstallCommand(BaseCommand):
             "# It includes all direct and indirect dependencies.",
             "\nset(DCPM_LIBRARIES \"\")\n"
         ]
-        
+
         for lib in sorted(all_libs):
             lib_path = f".dcpm/modules/{lib}"
             lines.append(f"if(EXISTS \"${{CMAKE_SOURCE_DIR}}/{lib_path}/CMakeLists.txt\")")
             lines.append(f"    add_subdirectory({lib_path})")
             lines.append(f"    list(APPEND DCPM_LIBRARIES {lib})")
             lines.append("endif()\n")
-            
+
         with open(cmake_path, "w") as f:
             f.write("\n".join(lines))
 

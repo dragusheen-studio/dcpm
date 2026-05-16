@@ -9,9 +9,9 @@ from dcpm.utils.text import to_snake_case
 class InitCommand(BaseCommand):
     def run(self, params):
         raw_path = params[0] if params else None
-        
+
         if not raw_path:
-            target_dir = None 
+            target_dir = None
             default_project_name = "new_cpp_project"
         elif raw_path == ".":
             target_dir = os.getcwd()
@@ -25,11 +25,11 @@ class InitCommand(BaseCommand):
 
         if target_dir is None:
             target_dir = os.path.abspath(answers['name'])
-        
+
         os.makedirs(target_dir, exist_ok=True)
         self._create_directories(target_dir, answers)
         self._generate_files(target_dir, answers)
-        
+
         print(f"\n{Fore.GREEN}{Style.BRIGHT}🚀 Project '{answers['name']}' is ready!{Style.RESET_ALL}")
         print(f"{Fore.CYAN}Location: {target_dir}{Fore.RESET}")
         print(f"{Fore.YELLOW}Next step: Run {Style.BRIGHT}dcpm install{Style.RESET_ALL}{Fore.YELLOW} to generate your CMake environment.{Fore.RESET}")
@@ -40,7 +40,7 @@ class InitCommand(BaseCommand):
             os.path.join(root, answers['folders']['sources']),
             os.path.join(root, answers['folders']['includes']),
         ]
-        
+
         if answers['folders'].get('tests'):
             folders.append(os.path.join(root, answers['folders']['tests']))
 
@@ -52,7 +52,7 @@ class InitCommand(BaseCommand):
         config_path = os.path.join(root, ".dcpm", "config.json")
         with open(config_path, 'w') as f:
             json.dump(answers, f, indent=4)
-        
+
         if hasattr(self, '_setup_options') and self._setup_options.get('clang_style'):
             style = self._setup_options['clang_style']
             content = f"BasedOnStyle: {style}" if style != "Empty (Custom)" else "# Add your custom rules here"
@@ -83,7 +83,7 @@ class InitCommand(BaseCommand):
         mapping = {}
         if hasattr(self, '_setup_options') and self._setup_options.get('use_gitignore'):
             mapping["common/gitignore.template"] = ".gitignore"
-        
+
         if template_type == "executable":
             mapping.update({
                 "executable/CMakeLists.txt.template": "CMakeLists.txt",
@@ -117,17 +117,17 @@ class InitCommand(BaseCommand):
 
     def _write_template(self, template_path, dest_path, keys):
         template_full_path = os.path.join(os.path.dirname(__file__), "..", "templates", template_path)
-        
+
         with open(template_full_path, 'r') as f:
             content = f.read()
-        
+
         if "${TEST_DIR}" in content and keys.get("TEST_DIR") is None:
             content = re.sub(r'# \[TESTS_SECTION_START\].*?# \[TESTS_SECTION_END\]', '', content, flags=re.DOTALL)
-        
+
         for key, value in keys.items():
             actual_value = str(value) if value is not None else ""
             content = content.replace(f"${{{key}}}", actual_value)
-        
+
         with open(dest_path, 'w') as f:
             f.write(content)
 
@@ -141,7 +141,7 @@ class InitCommand(BaseCommand):
             "Target type:",
             choices=["Executable", "Library", "Header-only"]
         ).ask()
-        
+
         lib_type = None
         if target_type == "Library":
             lib_type = questionary.select("Library Type:", choices=["Static", "Shared"]).ask()
@@ -149,7 +149,7 @@ class InitCommand(BaseCommand):
         cpp_std = questionary.select("C++ Standard:", choices=["11", "14", "17", "20", "23"], default="17").ask()
         src_dir = questionary.text("Source directory:", default="src").ask()
         inc_dir = questionary.text("Include directory:", default="include").ask()
-        
+
         test_dir = None
         if target_type in ["Library", "Header-only"]:
             test_dir = questionary.text("Tests directory:", default="tests").ask()
@@ -161,7 +161,7 @@ class InitCommand(BaseCommand):
         use_clang = questionary.confirm("Add .clang-format?", default=True).ask()
         clang_style = None
         if use_clang:
-            clang_style = questionary.select("Clang-Format style:", 
+            clang_style = questionary.select("Clang-Format style:",
                 choices=["LLVM", "Google", "Chromium", "Mozilla", "WebKit", "Empty (Custom)"]).ask()
 
         use_gitignore = questionary.confirm("Add default .gitignore?", default=True).ask()

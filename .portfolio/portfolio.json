@@ -1,0 +1,60 @@
+{
+	"title": "DCPM",
+	"subtitle": "Dragusheen C++ Project Manager",
+	"description": "Un gestionnaire de paquets et de projets pour C++ inspiré par la simplicité de pnpm. Il automatise la gestion des dépendances récursives, le verrouillage des versions via Lockfile et la configuration CMake.",
+	"image": "./logo.png",
+	"tags": [
+		{
+			"name": "Python",
+			"important": true
+		},
+		{
+			"name": "Project Manager",
+			"important": true
+		},
+		{
+			"name": "C++",
+			"important": true
+		},
+		{
+			"name": "CMake",
+			"important": false
+		},
+		{
+			"name": "Git",
+			"important": false
+		}
+	],
+	"links": [
+		{
+			"name": "GitHub",
+			"url": "https://github.com/dragusheen-studio/dcpm"
+		}
+	],
+	"featured": true,
+	"details": {
+		"role": "Lead Developer & Software Architect",
+		"status": "Version 1.0.0 (Stable)",
+		"client": {
+			"name": "Open Source Project",
+			"url": "https://github.com/dragusheen-studio/dcpm",
+			"description": "Outil de développement C++"
+		},
+		"problem": "La gestion des dépendances en C++ est historiquement complexe. Les développeurs doivent souvent choisir entre des outils lourds comme Conan ou gérer manuellement des submodules Git fragiles, ce qui freine la productivité.",
+		"solution": "Une interface CLI ultra-rapide qui gère tout le cycle de vie : de l'initialisation du projet à l'installation récursive des dépendances. DCPM utilise un système de 'Flat Tree' et un Lockfile pour garantir que chaque build est reproductible sur n'importe quelle machine.",
+		"features": [
+			"Initialisation interactive (Wizard) de projets et libs",
+			"Gestion récursive des dépendances (Crawler)",
+			"Verrouillage des versions via dcpm.lock",
+			"Intégration transparente avec CMake",
+			"Pruning automatique des dépendances inutilisées"
+		],
+		"gallery": [
+			"./DCPM-init.png",
+			"./DCPM-add.png",
+			"./DCPM-config.png",
+			"./DCPM-lock.png"
+		],
+		"version": "1.0.0"
+	}
+}

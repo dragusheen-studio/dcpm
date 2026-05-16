@@ -8,7 +8,6 @@ from .remove import RemoveCommand
 from .update import UpdateCommand
 from .info import InfoCommand
 
-
 COMMANDS = {
     "init": InitCommand(),
     "add": AddCommand(),

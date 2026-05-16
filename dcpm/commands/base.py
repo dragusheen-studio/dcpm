@@ -23,7 +23,7 @@ class BaseCommand(ABC):
             print(f"{Fore.RED}Error: Not a DCPM project or not at the root of the project.{Fore.RESET}")
             return False
         return True
-    
+
     def get_dcpm_config(self):
         try:
             with open(self._config_path, "r") as f:

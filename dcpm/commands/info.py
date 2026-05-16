@@ -25,14 +25,14 @@ class InfoCommand(BaseCommand):
         print(f"{Fore.WHITE}Name        :{Fore.RESET} {config.get('name', 'Unknown')}")
         print(f"{Fore.WHITE}Type        :{Fore.RESET} {config.get('type', 'Unknown')}")
         print(f"{Fore.WHITE}C++ Standard:{Fore.RESET} {config.get('cpp_version', 'Unknown')}")
-        
+
         print(f"{Fore.WHITE}Location    :{Fore.RESET} {os.getcwd()}")
         print("-" * 30)
 
     def _display_dependencies_info(self, config):
         dependencies = config.get("dependencies", {})
         print(f"\n{Fore.MAGENTA}{Style.BRIGHT}=== DEPENDENCIES ==={Style.RESET_ALL}")
-        
+
         if not dependencies:
             print(f"{Fore.YELLOW}No dependencies registered.{Fore.RESET}")
             return
@@ -44,10 +44,10 @@ class InfoCommand(BaseCommand):
         for name, info in dependencies.items():
             url = info.get("url", "N/A")
             version = info.get("version", "N/A")
-            
+
             size_str, size_bytes = self._get_dir_size(f".dcpm/modules/{name}")
             total_size += size_bytes
-            
+
             print(f"{Fore.BLUE}{name:<20}{Fore.RESET} {version:<15} {size_str:<12} {Fore.LIGHTBLACK_EX}{url}{Fore.RESET}")
 
         print("-" * 70)
@@ -58,7 +58,7 @@ class InfoCommand(BaseCommand):
         total = 0
         if not os.path.exists(path):
             return "Not installed", 0
-        
+
         try:
             for dirpath, dirnames, filenames in os.walk(path):
                 for f in filenames:
