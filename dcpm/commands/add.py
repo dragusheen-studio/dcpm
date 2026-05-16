@@ -22,7 +22,7 @@ class AddCommand(BaseCommand):
             return
 
         input_source = params[0]
-        use_latest = "--latest" in params
+        ask_version = "--version" in params
         
         url = self._WHITELIST.get(input_source, input_source)
         is_external = input_source not in self._WHITELIST
@@ -41,8 +41,9 @@ class AddCommand(BaseCommand):
         
         version = "default"
         if tags:
-            if use_latest:
+            if not ask_version:
                 version = tags[0]
+                print(f"{Fore.CYAN}Using latest version: {Style.BRIGHT}{version}{Style.RESET_ALL}")
             else:
                 choice = questionary.select(
                     "Select version:",
@@ -103,9 +104,10 @@ class AddCommand(BaseCommand):
             installer.run([])
 
     def get_short_help(self):
-        return "Add a dependency (whitelist or URL) to configuration."
+        return "Add a dependency (defaults to latest version)."
 
     def get_long_help(self):
-        return (f"Usage: {Fore.GREEN}dcpm add <name|url> [--latest]{Fore.RESET}\n\n"
-                "Updates your config.json with a new dependency. For external URLs,\n"
-                "it allows you to define a short alias for easier project management.")
+        return (f"Usage: {Fore.GREEN}dcpm add <name|url> [flags]{Fore.RESET}\n\n"
+                "Flags:\n"
+                "  --version   : Manually select a version from available tags.\n"
+                "  --noInstall : Don't run 'dcpm install' automatically after adding.")
