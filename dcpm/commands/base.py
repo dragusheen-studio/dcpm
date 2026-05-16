@@ -1,3 +1,4 @@
+import os
 from abc import ABC, abstractmethod
 from colorama import Fore, Style
 
@@ -22,3 +23,9 @@ class BaseCommand(ABC):
                 print(f"    - {p}")
         else:
             print(f"{Fore.YELLOW}Parameters:{Style.RESET_ALL} None")
+
+    def dcpm_validation(self):
+        if not os.path.exists(".dcpm/config.json"):
+            print(f"{Fore.RED}Error: Not a DCPM project or not at the root of the project.{Fore.RESET}")
+            return False
+        return True

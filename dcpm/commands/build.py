@@ -9,9 +9,9 @@ class BuildCommand(BaseCommand):
     _build_dir = "build"
 
     def run(self, params):
-        if not os.path.exists(".dcpm/config.json"):
-            print(f"{Fore.RED}Error: Not a DCPM project.{Fore.RESET}")
+        if not self.dcpm_validation():
             return
+
         self._clean_section(params)
         self._build_section(params)
 
@@ -65,8 +65,9 @@ class BuildCommand(BaseCommand):
         return "Compile the current project using CMake."
 
     def get_long_help(self):
-        return (f"Usage: {Fore.GREEN}dcpm build{Fore.RESET}\n\n"
-                "Automates the compilation workflow:\n"
-                "  1. Validates the project structure\n"
-                "  2. Configures CMake in the 'build/' folder\n"
-                "  3. Compiles the targets defined in your configuration.")
+        return (f"Usage: {Fore.GREEN}dcpm build [options]{Fore.RESET}\n\n"
+                "Options:\n"
+                "  --clean    : Perform a soft clean (remove objects) before building.\n"
+                "  --reset    : Perform a hard clean (delete build folder) before building.\n"
+                "  --noBuild  : Stop after the clean/reset phase.\n\n"
+                "Example: 'dcpm build --reset --noBuild' to just wipe the build folder.")
