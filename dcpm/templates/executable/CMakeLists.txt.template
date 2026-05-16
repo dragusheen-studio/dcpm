@@ -4,9 +4,12 @@ project(${PROJECT_NAME} VERSION 0.1.0)
 set(CMAKE_CXX_STANDARD ${CPP_STD})
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include(.dcpm/dcpm.cmake)
-include_directories(${INCLUDE_DIR})
+# On n'inclut le fichier dcpm.cmake que s'il existe localement (Projet Racine) 
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.dcpm/dcpm.cmake")
+    include(.dcpm/dcpm.cmake)
+endif()
 
+include_directories(${INCLUDE_DIR})
 file(GLOB_RECURSE SOURCES "${SRC_DIR}/*.cpp")
 
 # --- TARGET: EXE ---
@@ -14,7 +17,6 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${DCPM_LIBRARIES})
 
 # [TESTS_SECTION_START]
-# ----- TARGET: TESTS -----
 if(EXISTS "${CMAKE_SOURCE_DIR}/${TEST_DIR}")
     enable_testing()
     
@@ -26,16 +28,14 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/${TEST_DIR}")
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
 
-    # Exclude main.cpp from test build to avoid double main()
     set(LIB_SOURCES ${SOURCES})
     list(FILTER LIB_SOURCES EXCLUDE REGEX ".*main\\.cpp$")
-
     file(GLOB_RECURSE TEST_SOURCES "${TEST_DIR}/*.cpp")
     
-    add_executable(UnitTests ${LIB_SOURCES} ${TEST_SOURCES})
-    target_link_libraries(UnitTests gtest_main ${DCPM_LIBRARIES})
+    add_executable(${PROJECT_NAME}_UnitTests ${LIB_SOURCES} ${TEST_SOURCES})
+    target_link_libraries(${PROJECT_NAME}_UnitTests PRIVATE gtest_main ${DCPM_LIBRARIES})
     
     include(GoogleTest)
-    gtest_discover_tests(UnitTests)
+    gtest_discover_tests(${PROJECT_NAME}_UnitTests)
 endif()
 # [TESTS_SECTION_END]

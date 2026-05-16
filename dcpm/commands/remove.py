@@ -39,8 +39,7 @@ class RemoveCommand(BaseCommand):
         if any_removed:
             with open(self._config_path, "w") as f:
                 json.dump(config, f, indent=4)
-            
-            self.update_dcpm_cmake()
+
             print(f"\n{Fore.BLUE}✔ Project configuration and CMake updated.{Fore.RESET}")
 
             if "--noInstall" not in self.current_params:

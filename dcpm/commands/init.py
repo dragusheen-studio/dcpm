@@ -1,20 +1,38 @@
 import questionary
 import os
 import json
+import re
 from colorama import Fore, Style
 from .base import BaseCommand
-from dcpm.utils.text import to_pascal_case, to_snake_case
+from dcpm.utils.text import to_snake_case
 
 class InitCommand(BaseCommand):
     def run(self, params):
-        answers = self._get_form_response(params)
-        if not answers: return
+        raw_path = params[0] if params else None
         
-        root_dir = answers['name']
-        self._create_directories(root_dir, answers)
-        self._generate_files(root_dir, answers)
-        print(f"\n{Fore.GREEN}🚀 Project '{root_dir}' is ready!{Fore.RESET}")
+        if not raw_path:
+            target_dir = None 
+            default_project_name = "new_cpp_project"
+        elif raw_path == ".":
+            target_dir = os.getcwd()
+            default_project_name = os.path.basename(target_dir)
+        else:
+            target_dir = os.path.abspath(raw_path)
+            default_project_name = os.path.basename(target_dir)
 
+        answers = self._get_form_response(default_project_name)
+        if not answers: return
+
+        if target_dir is None:
+            target_dir = os.path.abspath(answers['name'])
+        
+        os.makedirs(target_dir, exist_ok=True)
+        self._create_directories(target_dir, answers)
+        self._generate_files(target_dir, answers)
+        
+        print(f"\n{Fore.GREEN}{Style.BRIGHT}🚀 Project '{answers['name']}' is ready!{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}Location: {target_dir}{Fore.RESET}")
+        print(f"{Fore.YELLOW}Next step: Run {Style.BRIGHT}dcpm install{Style.RESET_ALL}{Fore.YELLOW} to generate your CMake environment.{Fore.RESET}")
 
     def _create_directories(self, root, answers):
         folders = [
@@ -30,7 +48,6 @@ class InitCommand(BaseCommand):
             os.makedirs(folder, exist_ok=True)
             print(f"{Fore.BLUE}Creating directory:{Fore.RESET} {folder}")
 
-
     def _generate_files(self, root, answers):
         config_path = os.path.join(root, ".dcpm", "config.json")
         with open(config_path, 'w') as f:
@@ -44,7 +61,7 @@ class InitCommand(BaseCommand):
 
         keys = {
             "PROJECT_NAME": answers['name'],
-            "PROJECT_PASCAL": to_pascal_case(answers['name']),
+            "PROJECT_PASCAL": answers['name'],
             "NAMESPACE": to_snake_case(answers['name']),
             "CPP_STD": answers['cpp_std'],
             "SRC_DIR": answers['folders']['sources'],
@@ -62,11 +79,10 @@ class InitCommand(BaseCommand):
         template_folder = type_map[answers['target_type']]
         self._deploy_templates(root, template_folder, keys)
 
-
     def _deploy_templates(self, root, template_type, keys):
-        mapping = {
-            "common/dcpm.cmake.template": ".dcpm/dcpm.cmake"
-        }
+        mapping = {}
+        if hasattr(self, '_setup_options') and self._setup_options.get('use_gitignore'):
+            mapping["common/gitignore.template"] = ".gitignore"
         
         if template_type == "executable":
             mapping.update({
@@ -99,7 +115,6 @@ class InitCommand(BaseCommand):
             os.makedirs(os.path.dirname(os.path.join(root, dest)), exist_ok=True)
             self._write_template(src, os.path.join(root, dest), keys)
 
-
     def _write_template(self, template_path, dest_path, keys):
         template_full_path = os.path.join(os.path.dirname(__file__), "..", "templates", template_path)
         
@@ -107,7 +122,6 @@ class InitCommand(BaseCommand):
             content = f.read()
         
         if "${TEST_DIR}" in content and keys.get("TEST_DIR") is None:
-            import re
             content = re.sub(r'# \[TESTS_SECTION_START\].*?# \[TESTS_SECTION_END\]', '', content, flags=re.DOTALL)
         
         for key, value in keys.items():
@@ -117,11 +131,8 @@ class InitCommand(BaseCommand):
         with open(dest_path, 'w') as f:
             f.write(content)
 
-
-    def _get_form_response(self, params):
+    def _get_form_response(self, default_name):
         print(f"{Fore.CYAN}{Style.BRIGHT}--- DCPM Project Wizard ---{Style.RESET_ALL}\n")
-
-        default_name = params[0] if params else "new_cpp_project"
 
         name = questionary.text("Project Name:", default=default_name).ask()
         if not name: return None
@@ -131,7 +142,6 @@ class InitCommand(BaseCommand):
             choices=["Executable", "Library", "Header-only"]
         ).ask()
         
-
         lib_type = None
         if target_type == "Library":
             lib_type = questionary.select("Library Type:", choices=["Static", "Shared"]).ask()
@@ -154,7 +164,12 @@ class InitCommand(BaseCommand):
             clang_style = questionary.select("Clang-Format style:", 
                 choices=["LLVM", "Google", "Chromium", "Mozilla", "WebKit", "Empty (Custom)"]).ask()
 
-        self._setup_options = {'clang_style': clang_style}
+        use_gitignore = questionary.confirm("Add default .gitignore?", default=True).ask()
+
+        self._setup_options = {
+            'clang_style': clang_style,
+            'use_gitignore': use_gitignore
+        }
 
         print(f"\n{Fore.GREEN}{Style.BRIGHT}Wizard completed!{Style.RESET_ALL}")
 
@@ -171,10 +186,8 @@ class InitCommand(BaseCommand):
             "dependencies": {}
         }
 
-
     def get_short_help(self):
-        return "Initialize a new C++ project or library."
-
+        return "Initialize a new C++ project."
 
     def get_long_help(self):
         return (f"Usage: {Fore.GREEN}dcpm init [project_name]{Fore.RESET}\n\n"
