@@ -1,0 +1,18 @@
+#include "${PROJECT_PASCAL}.hpp"
+#include <iostream>
+
+namespace ${NAMESPACE} {
+
+${PROJECT_PASCAL}::${PROJECT_PASCAL}() {
+    std::cout << "[${PROJECT_NAME}] Initialized" << std::endl;
+}
+
+${PROJECT_PASCAL}::~${PROJECT_PASCAL}() {
+    std::cout << "[${PROJECT_NAME}] Destroyed" << std::endl;
+}
+
+void ${PROJECT_PASCAL}::run() {
+    std::cout << "[${PROJECT_NAME}] Library logic is running!" << std::endl;
+}
+
+} // namespace ${NAMESPACE}

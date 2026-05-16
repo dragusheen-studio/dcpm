@@ -1,0 +1,13 @@
+#include "${PROJECT_PASCAL}.hpp"
+#include <iostream>
+
+namespace ${NAMESPACE} {
+
+${PROJECT_PASCAL}::${PROJECT_PASCAL}() {}
+${PROJECT_PASCAL}::~${PROJECT_PASCAL}() {}
+
+void ${PROJECT_PASCAL}::run() {
+    std::cout << "${PROJECT_PASCAL} is now running!" << std::endl;
+}
+
+} // namespace ${NAMESPACE}

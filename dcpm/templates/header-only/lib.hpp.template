@@ -1,0 +1,20 @@
+#pragma once
+
+#include <iostream>
+
+namespace ${NAMESPACE} {
+
+class ${PROJECT_PASCAL} {
+public:
+    ${PROJECT_PASCAL}() = default;
+    ~${PROJECT_PASCAL}() = default;
+
+    /**
+     * Entry point for the header-only logic.
+     */
+    inline void run() {
+        std::cout << "[${PROJECT_NAME}] Header-only logic is running!" << std::endl;
+    }
+};
+
+} // namespace ${NAMESPACE}

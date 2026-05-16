@@ -1,0 +1,11 @@
+#include <iostream>
+#include "${PROJECT_PASCAL}.hpp"
+
+int main(int argc, char* argv[]) {
+    std::cout << "Hello from ${PROJECT_NAME}!" << std::endl;
+    
+    ${NAMESPACE}::${PROJECT_PASCAL} app;
+    app.run();
+    
+    return 0;
+}

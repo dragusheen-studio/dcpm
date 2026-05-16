@@ -1,0 +1,37 @@
+cmake_minimum_required(VERSION 3.14)
+project(${PROJECT_NAME} VERSION 0.1.0)
+
+if(POLICY CMP0135)
+  cmake_policy(SET CMP0135 NEW)
+endif()
+
+set(CMAKE_CXX_STANDARD ${CPP_STD})
+include(.dcpm/dcpm.cmake)
+
+include_directories(${INCLUDE_DIR})
+file(GLOB_RECURSE LIB_SOURCES "${SRC_DIR}/*.cpp")
+
+# --- THE LIBRARY ---
+add_library(${PROJECT_NAME} ${LIB_TYPE} ${LIB_SOURCES})
+target_include_directories(${PROJECT_NAME} PUBLIC ${INCLUDE_DIR})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${DCPM_LIBRARIES})
+
+# --- TEST INFRASTRUCTURE ---
+if(EXISTS "${CMAKE_SOURCE_DIR}/${TEST_DIR}")
+    add_executable(${PROJECT_NAME}_playground "${TEST_DIR}/manual_test.cpp")
+    target_link_libraries(${PROJECT_NAME}_playground PRIVATE ${PROJECT_NAME})
+
+    include(FetchContent)
+    FetchContent_Declare(
+      googletest
+      URL https://github.com/google/googletest/archive/refs/heads/main.zip
+    )
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    FetchContent_MakeAvailable(googletest)
+
+    add_executable(UnitTests "${TEST_DIR}/unit_tests.cpp")
+    target_link_libraries(UnitTests PRIVATE ${PROJECT_NAME} gtest_main)
+    
+    include(GoogleTest)
+    gtest_discover_tests(UnitTests)
+endif()
