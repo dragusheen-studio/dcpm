@@ -1,5 +1,4 @@
 import os
-import json
 import subprocess
 from colorama import Fore, Style
 from .base import BaseCommand

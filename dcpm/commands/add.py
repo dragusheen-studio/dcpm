@@ -1,14 +1,116 @@
+import questionary
+import subprocess
+import re
+import json
+import sys
+from colorama import Fore, Style
 from .base import BaseCommand
-from colorama import Fore
 
 class AddCommand(BaseCommand):
+    _WHITELIST = {
+        "nlohmann_json": "https://github.com/nlohmann/json.git",
+        "spdlog": "https://github.com/gabime/spdlog.git",
+        "fmt": "https://github.com/fmtlib/fmt.git"
+    }
+
     def run(self, params):
-        self.display_info("add", params)
+        if not self.dcpm_validation(): return
+        self.current_params = params
+
+        libs_to_add = [p for p in params if not p.startswith("-")]
+        if not libs_to_add:
+            print(f"{Fore.RED}Error: Missing library name or URL.{Fore.RESET}")
+            return
+
+        ask_version = "--version" in params and len(libs_to_add) == 1
+        
+        for input_source in libs_to_add:
+            print(f"\n{Style.BRIGHT}--- Adding: {input_source} ---{Style.RESET_ALL}")
+            
+            url = self._WHITELIST.get(input_source, input_source)
+            is_external = input_source not in self._WHITELIST
+
+            if is_external:
+                if not url.startswith("http") and not url.endswith(".git"):
+                    print(f"{Fore.RED}  → Error: Invalid URL format. Skipping.{Fore.RESET}")
+                    continue
+                
+                confirm = questionary.confirm(f"  External library '{url}'. Proceed?", default=True).ask()
+                if confirm is None: self._abort()
+                if not confirm: continue
+
+            print(f"{Fore.YELLOW}  Fetching versions...{Fore.RESET}")
+            tags = self._fetch_remote_tags(url)
+            
+            version = "default"
+            if tags:
+                if not ask_version:
+                    version = tags[0]
+                    print(f"{Fore.CYAN}  Using latest version: {Style.BRIGHT}{version}{Style.RESET_ALL}")
+                else:
+                    choice = questionary.select(
+                        f"  Select version for {input_source}:",
+                        choices=["latest (branch default)"] + tags
+                    ).ask()
+                    if choice is None: self._abort()
+                    version = tags[0] if choice == "latest (branch default)" else choice
+
+            final_name = input_source
+            if is_external:
+                suggested_name = url.split("/")[-1].replace(".git", "")
+                alias = questionary.text(f"  Enter alias (default: {suggested_name}):").ask()
+                if alias is None: self._abort()
+                final_name = alias if alias and alias.strip() else suggested_name
+
+            self._save_dependency(final_name, url, version, silent_install=True)
+
+        if "--noInstall" not in self.current_params:
+            print(f"\n{Fore.MAGENTA}{Style.BRIGHT}Triggering global installation...{Style.RESET_ALL}")
+            from .install import InstallCommand
+            installer = InstallCommand()
+            installer.run([])
+
+    def _fetch_remote_tags(self, url):
+        try:
+            result = subprocess.run(
+                ["git", "ls-remote", "--tags", "--refs", url],
+                capture_output=True, text=True, timeout=10
+            )
+            tags = re.findall(r"refs/tags/(.*)", result.stdout)
+            
+            def version_key(v):
+                parts = re.split(r'[.-]', v.lstrip('v'))
+                return [int(p) if p.isdigit() else p for p in parts]
+
+            try:
+                return sorted(tags, key=version_key, reverse=True)
+            except Exception:
+                return sorted(tags, reverse=True)
+        except Exception:
+            return []
+
+    def _abort(self):
+        print(f"\n{Fore.YELLOW}Operation cancelled by user.{Fore.RESET}")
+        sys.exit(0)
+
+    def _save_dependency(self, name, url, version, silent_install=False):
+        config = self.get_dcpm_config()
+        if not config: return
+        if "dependencies" not in config: config["dependencies"] = {}
+
+        config["dependencies"][name] = {"url": url, "version": version}
+
+        with open(self._config_path, "w") as f:
+            json.dump(config, f, indent=4)
+        
+        self.update_dcpm_cmake()
+        print(f"{Fore.GREEN}  ✔ '{name}' ({version}) registered.{Fore.RESET}")
 
     def get_short_help(self):
-        return "Add a new dependency to the project."
+        return "Add one or more dependencies."
 
     def get_long_help(self):
-        return (f"Usage: {Fore.GREEN}dcpm add <git_url_or_name>{Fore.RESET}\n\n"
-                "Clones a library from a Git repository into '.dcpm/modules/'.\n"
-                "Automatically updates project configuration and CMake links.")
+        return (f"Usage: {Fore.GREEN}dcpm add <lib1> [lib2]... [flags]{Fore.RESET}\n\n"
+                "Flags:\n"
+                "  --version   : Manually select version (works only for a single library).\n"
+                "  --noInstall : Don't run installation after adding libraries.")
