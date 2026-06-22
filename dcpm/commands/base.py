@@ -1,7 +1,7 @@
 import os
 import json
 from abc import ABC, abstractmethod
-from colorama import Fore, Style
+from colorama import Fore
 
 class BaseCommand(ABC):
     _config_path = ".dcpm/config.json"

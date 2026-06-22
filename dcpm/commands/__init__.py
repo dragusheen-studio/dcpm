@@ -1,21 +1,23 @@
-from .init import InitCommand
 from .add import AddCommand
-from .install import InstallCommand
-from .run import RunCommand
-from .help import HelpCommand
 from .build import BuildCommand
-from .remove import RemoveCommand
-from .update import UpdateCommand
+from .help import HelpCommand
+from .hook import HookCommand
 from .info import InfoCommand
+from .init import InitCommand
+from .install import InstallCommand
+from .remove import RemoveCommand
+from .run import RunCommand
+from .update import UpdateCommand
 
 COMMANDS = {
-    "init": InitCommand(),
     "add": AddCommand(),
-	"remove": RemoveCommand(),
-    "install": InstallCommand(),
-	"update": UpdateCommand(),
-    "run": RunCommand(),
-	"info": InfoCommand(),
 	"build": BuildCommand(),
-    "help": HelpCommand()
+    "help": HelpCommand(),
+	"hook": HookCommand(),
+	"info": InfoCommand(),
+    "init": InitCommand(),
+    "install": InstallCommand(),
+	"remove": RemoveCommand(),
+    "run": RunCommand(),
+	"update": UpdateCommand(),
 }
