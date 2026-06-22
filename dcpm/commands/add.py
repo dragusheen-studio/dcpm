@@ -3,6 +3,7 @@ import subprocess
 import re
 import json
 import sys
+import os
 from colorama import Fore, Style
 from .base import BaseCommand
 
@@ -20,6 +21,8 @@ class AddCommand(BaseCommand):
             return
 
         ask_version = "--version" in params and len(libs_to_add) == 1
+
+        added_libs = []
 
         for input_source in libs_to_add:
             print(f"\n{Style.BRIGHT}--- Adding: {input_source} ---{Style.RESET_ALL}")
@@ -60,12 +63,26 @@ class AddCommand(BaseCommand):
                 final_name = alias if alias and alias.strip() else suggested_name
 
             self._save_dependency(final_name, url, version, silent_install=True)
+            added_libs.append(final_name)
 
         if "--noInstall" not in self.current_params:
             print(f"\n{Fore.MAGENTA}{Style.BRIGHT}Triggering global installation...{Style.RESET_ALL}")
             from .install import InstallCommand
             installer = InstallCommand()
             installer.run([])
+
+            config = self.get_dcpm_config()
+            updated = False
+            for lib in added_libs:
+                config, hook_found = self._check_and_configure_library_hooks(lib, config)
+                if hook_found:
+                    updated = True
+
+            if updated:
+                with open(self._config_path, "w") as f:
+                    json.dump(config, f, indent=4)
+        else:
+            print(f"\n{Fore.YELLOW}⚠️  --noInstall used. Hooks validation skipped until next 'dcpm install'.{Fore.RESET}")
 
     def _fetch_remote_tags(self, url):
         try:
@@ -101,6 +118,51 @@ class AddCommand(BaseCommand):
             json.dump(config, f, indent=4)
 
         print(f"{Fore.GREEN}  ✔ '{name}' ({version}) registered.{Fore.RESET}")
+
+    def _check_and_configure_library_hooks(self, lib_name, main_config):
+        lib_config_path = os.path.join(".dcpm", "modules", lib_name, ".dcpm", "config.json")
+
+        if not os.path.exists(lib_config_path):
+            return main_config, False
+
+        with open(lib_config_path, "r") as f:
+            try:
+                lib_config = json.load(f)
+            except Exception:
+                return main_config, False
+
+        lib_hooks = lib_config.get("hooks", {}).get("pre-build", {})
+        if not lib_hooks:
+            return main_config, False
+
+        print(f"\n{Fore.YELLOW}⚠️  Dependency '{lib_name}' embedding pre-build integration tasks.{Fore.RESET}")
+        if all(not h.get("inputs") for h in lib_hooks.values()):
+            print(f"{Fore.GREEN}  ✔ No configuration needed for '{lib_name}' hooks. Skipping mapping.{Fore.RESET}")
+            return main_config, True
+        print(f"{Fore.WHITE}Please map the required configuration tokens below:{Fore.RESET}")
+
+        if "hooks_mapping" not in main_config:
+            main_config["hooks_mapping"] = {}
+        if lib_name not in main_config["hooks_mapping"]:
+            main_config["hooks_mapping"][lib_name] = {}
+
+        hook_found = False
+        for hook_name, hook_data in lib_hooks.items():
+            needed_inputs = hook_data.get("inputs", [])
+
+            if needed_inputs:
+                hook_found = True
+                print(f"\n{Style.BRIGHT}Hook Module: {hook_name}{Style.RESET_ALL}")
+
+                for inp in needed_inputs:
+                    val = questionary.text(f"  ? Setup parameter '{inp}':").ask()
+                    if val is None: self._abort()
+                    main_config["hooks_mapping"][lib_name][inp] = val.strip() if val else ""
+
+        if hook_found:
+            print(f"\n{Fore.GREEN}✔ Hook environment variables for '{lib_name}' mapped successfully.{Fore.RESET}\n")
+
+        return main_config, hook_found
 
     def get_short_help(self):
         return "Add one or more dependencies."
